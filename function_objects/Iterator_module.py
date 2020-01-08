@@ -1,8 +1,8 @@
 import numpy as np
 
-import Converter_module
+from . import Converter_module
 
-def iterator_all_state(i_num_nodes, dict_perturbed_nodes,
+def iterator_all_state(i_num_nodes, dict_perturbed_nodes={},
                        i_num_processes=1, i_ith_process=0):
     """dict_perturbed_nodes = {index_of_perturbed_node: state_of_perturbed_node}
     return state as array form."""

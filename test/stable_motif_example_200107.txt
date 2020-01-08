@@ -1,0 +1,13 @@
+targets, factors
+
+a, a & b
+b, a | c | !e
+c, ( a & b ) | d
+d, ( !b & !a ) | ( d & !a ) | ( d & !b ) | !e
+e, e | !c
+
+#stable motifs
+#a=0
+#e=1
+#a=1, b=1
+#c=1, d=1, e=0
