@@ -161,8 +161,9 @@ def find_stable_motif_given_comb_iterator(unsigned_graph,
 #        i_count+=1
         array_index_nodes = array_i_comb_to_indexes[Converter_module.int_to_arraystate_bool(i_comb, len(array_i_comb_to_indexes))]
         l_dict_stable_motifs_in_comb = find_stable_motif_given_nodes(unsigned_graph, expanded_network, array_index_nodes, l_dict_stable_motifs_known)
-        if s_address_results:
-            write_stable_motifs_semaphore(s_address_results, l_dict_stable_motifs_in_comb, unsigned_graph)
+        if l_dict_stable_motifs_in_comb:
+            if s_address_results:
+                write_stable_motifs_semaphore(s_address_results, l_dict_stable_motifs_in_comb, unsigned_graph)
         l_dict_stable_motifs_new.extend(l_dict_stable_motifs_in_comb)
 #    tmp_fun_sema(s_address_results, str(i_index_process)+" cal "+str(i_count))
     return l_dict_stable_motifs_new
