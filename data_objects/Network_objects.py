@@ -39,7 +39,7 @@ class Unsigned_graph(Topology):
         return self.matrix_unsigned_graph
 
     def set_unsigned_graph_matrix(self, matrix):
-        self.matrix_unsigned_graph = np.array(matrix)
+        self.matrix_unsigned_graph = np.matrix(matrix)
         
     def show_source_nodenames(self):
         l_index_sources = []

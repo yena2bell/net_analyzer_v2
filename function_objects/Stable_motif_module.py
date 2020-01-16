@@ -9,10 +9,10 @@ import multiprocessing
 import time
 
 from .Topology_functions import SCC_module
-from .Topology_functions import connectedness_module
+from .Topology_functions import Connectedness_module
 from . import Iterator_module
 from . import Converter_module
-from . import multiprocessing_tools
+from . import Multiprocessing_tools
 
 
 def find_stable_motifs(unsigned_graph, 
@@ -134,7 +134,7 @@ def _find_stable_motif_in_multiprocess(l_arguments):
                                                                  i_num_all_processes,
                                                                  i_index_process)
     
-    _send_result_and_end_message_semaphore = multiprocessing_tools.decorator_semaphore_using_time(i_index_process, i_num_all_processes, 1, _send_result_and_end_message)
+    _send_result_and_end_message_semaphore = Multiprocessing_tools.decorator_semaphore_using_time(i_index_process, i_num_all_processes, 1, _send_result_and_end_message)
     _send_result_and_end_message_semaphore(queue_results_sender, l_dict_stable_motifs, i_index_process)
     
     
@@ -152,11 +152,11 @@ def find_stable_motif_given_comb_iterator(unsigned_graph,
                                           s_address_results=None, 
                                           i_num_processes = 1, 
                                           i_index_process=0):
-    write_stable_motifs_semaphore = multiprocessing_tools.decorator_semaphore_using_time(i_index_process, i_num_processes, 1, write_stable_motifs)
+    write_stable_motifs_semaphore = Multiprocessing_tools.decorator_semaphore_using_time(i_index_process, i_num_processes, 1, write_stable_motifs)
     l_dict_stable_motifs_new = []
     array_i_comb_to_indexes = np.array(l_i_comb_to_indexes)
 #    i_count = 0
-#    tmp_fun_sema= multiprocessing_tools.decorator_semaphore_using_time(i_index_process, i_num_processes, 1, tmp_fun)
+#    tmp_fun_sema= Multiprocessing_tools.decorator_semaphore_using_time(i_index_process, i_num_processes, 1, tmp_fun)
     for i_comb in iterator_given:
 #        i_count+=1
         array_index_nodes = array_i_comb_to_indexes[Converter_module.int_to_arraystate_bool(i_comb, len(array_i_comb_to_indexes))]
@@ -222,7 +222,7 @@ def _avoid_known_stable_motifs(l_dict_stable_motifs_known, l_index_nodes):
 
 def _check_stable_motif_condition1(unsigned_graph, l_indexes_nodes_in_graph):
     matrix_sub = unsigned_graph.show_unsigned_graph_matrix_form()[np.ix_(l_indexes_nodes_in_graph,l_indexes_nodes_in_graph)]
-    if not connectedness_module.is_connected_directed_matrix(matrix_sub):
+    if not Connectedness_module.is_connected_directed_matrix(matrix_sub):
         return False
     if not SCC_module.is_SCC(matrix_sub):
         return False
@@ -259,6 +259,16 @@ def _check_stable_motif_using_expanded_network_using_indexes(expanded_network, l
         return matrix_sub[0,0] >=1#exception! only when 1 node stable motif calculation.
     else:
         return SCC_module.is_SCC(matrix_sub)
+#        if SCC_module.is_SCC(matrix_sub):
+#            print([expanded_network.show_nodenames()[i] for i in l_indexes_single_nodes])
+#            print(l_indexes_single_nodes)
+#            print([expanded_network.show_nodenames()[i] for i in l_indexes_composite_nodes])
+#            print(l_indexes_composite_nodes)
+#            print(expanded_network.show_unsigned_graph_matrix_form())
+#            print(matrix_sub)
+#            return True
+#        else:
+#            return False
         
         
 def _find_index_composite_regulators(expanded_network, i_index_single):
