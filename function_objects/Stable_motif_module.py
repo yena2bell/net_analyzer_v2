@@ -10,6 +10,7 @@ import time
 
 from .Topology_functions import SCC_module
 from .Topology_functions import Connectedness_module
+from .Topology_functions import Cycles_module
 from . import Iterator_module
 from . import Converter_module
 from . import Multiprocessing_tools
@@ -273,9 +274,154 @@ def _check_stable_motif_using_expanded_network_using_indexes(expanded_network, l
         
 def _find_index_composite_regulators(expanded_network, i_index_single):
     #find_index of composite_regulators of the single_node given index form.
-    array_regulators = np.nonzero(expanded_network.show_unsigned_graph_matrix_form()[i_index_single,:])[0]
+    array_regulators = expanded_network.show_indexes_of_regulators_of_node(i_index_single)
     return array_regulators[array_regulators>=len(expanded_network.show_single_nodenames())]
 
 def _check_i_composite_node(expanded_network, i_composite_node, set_index_single_nodes):
     #check whether the composite node's regulators are all included in the given single nodes
-    return set(np.nonzero(expanded_network.show_unsigned_graph_matrix_form()[i_composite_node, :])[0]).issubset(set_index_single_nodes)
+    return set(expanded_network.show_indexes_of_regulators_of_node(i_composite_node)).issubset(set_index_single_nodes)
+
+
+def find_stable_motifs_using_expanded_net_cycles(expanded_network):
+    object_expanded_net_cycle_finder = Find_cycles_in_expaned_net_for_stable_motifs(expanded_network)
+    object_expanded_net_cycle_finder.find_cycles()
+    return object_expanded_net_cycle_finder.show_cycles_only_single_nodes(), object_expanded_net_cycle_finder.show_cycles_containing_composite_node()
+
+class Find_cycles_in_expaned_net_for_stable_motifs(Cycles_module.Find_cycles):
+    def __init__(self, expanded_network):
+        self.expanded_network = expanded_network
+        Cycles_module.Find_cycles.__init__(self, expanded_network.show_unsigned_graph_matrix_form())
+        self.dict_i_node_array_contradicted_nodes = {}
+        #{i:array(i2,i3,i4)} i_th expanded node can't be with i2,i3,i4 th expanded node in this cycle. 
+        #if i_th node is A_on, then node containing A_off becomes i2,i3,i4 th nodes.
+        #if i_th node is A_on__AND__B_off, A_off and B_on becomes value of key i
+        self._make_dict_of_opposing_state_containing_nodes()
+        
+        self.l_l_i_cycles_containing_composite = []
+        self.l_l_i_cycles_only_single = []
+        
+    def _decompose_SCC(self):# let the single node indexes are behind of composite node indexes
+        Cycles_module.Find_cycles._decompose_SCC(self)
+        for l_SCC in self.l_l_SCCs:
+            l_SCC.sort(reverse=True)
+    
+    def _make_dict_of_opposing_state_containing_nodes(self):
+        #make self.dict_i_node_array_contradicted_nodes
+        for i in range(len(self.expanded_network.show_single_nodenames())):
+            i_index_opposite_state = self.expanded_network.show_index_of_inverse_state_of_node(i)
+            self.dict_i_node_array_contradicted_nodes[i] = np.concatenate(([i_index_opposite_state], self.expanded_network.show_indexes_of_composite_node_containing_single_node(i_index_opposite_state)))
+        for i in range(len(self.expanded_network.show_composite_nodenames())):
+            i_index = i+ len(self.expanded_network.show_single_nodenames())
+            self.dict_i_node_array_contradicted_nodes[i_index] = np.array([self.expanded_network.show_index_of_inverse_state_of_node(i_simple_node) for i_simple_node in self.expanded_network.show_indexes_of_regulators_of_node(i_index)])
+    
+    def _find_conditions_to_SCC(self, l_SCC):
+        dict_i_node_array_contradictend_nodes_in_SCC = {}
+        for i in range(len(l_SCC)):
+            i_index_in_all = l_SCC[i]
+            array_contradicts = self.dict_i_node_array_contradicted_nodes[i_index_in_all]
+            l_tmp = []
+            for i_contradict in array_contradicts:
+                if i_contradict in l_SCC:
+                    l_tmp.append(l_SCC.index(i_contradict))
+            dict_i_node_array_contradictend_nodes_in_SCC[i] = np.array(l_tmp)
+        
+        return dict_i_node_array_contradictend_nodes_in_SCC
+    
+    def _find_position_single_node_start(self, l_indexes):
+        #l_indexes are sorted reversely. so bigger indexes comes earlier.
+        #so composite nodes are all in front part
+        #return position of the first coming single node index
+        for i, i_index in enumerate(l_indexes):
+            if i_index < len(self.expanded_network.show_single_nodenames()):
+                return i
+            
+        raise ValueError(str(l_indexes)+" has no single node index!")  
+    
+    def _find_cycles_in_SCC(self, l_SCC):
+        matrix_unsigned_of_SCC = np.matrix(self.matrix_unsigned[np.ix_(l_SCC,l_SCC)])
+        dict_i_node_array_contradicts_SCC = self._find_conditions_to_SCC(l_SCC)
+        i_position_of_single_node_start = self._find_position_single_node_start(l_SCC)
+        object_cycles_finder = Find_cycles_in_SCC_for_stable_motifs(matrix_unsigned_of_SCC, 
+                                                                    dict_i_node_array_contradicts_SCC, 
+                                                                    i_position_of_single_node_start)
+        l_l_i_cycles_containing_composite = object_cycles_finder.find_cycles_containing_composite_nodes()
+        l_l_i_cycles_only_single = object_cycles_finder.find_cycles_only_single_nodes()
+        
+        l_l_i_cycles_containing_composite_modified = self._modify_cycles(l_l_i_cycles_containing_composite, l_SCC)
+        l_l_i_cycles_only_single_modified = self._modify_cycles(l_l_i_cycles_only_single, l_SCC)
+
+        return l_l_i_cycles_containing_composite_modified, l_l_i_cycles_only_single_modified
+    
+    def find_cycles(self):
+        for l_SCC in self.l_l_SCCs:
+            l_l_i_cycles_containing_composite, l_l_i_cycles_only_single  = self._find_cycles_in_SCC(l_SCC)
+            self.l_l_i_cycles_containing_composite.extend(l_l_i_cycles_containing_composite)
+            self.l_l_i_cycles_only_single.extend(l_l_i_cycles_only_single)
+        
+    def show_cycles_containing_composite_node(self):
+        return self.l_l_i_cycles_containing_composite
+    
+    def show_cycles_only_single_nodes(self):
+        return self.l_l_i_cycles_only_single
+    
+    
+class Find_cycles_in_SCC_for_stable_motifs(Cycles_module.Find_cycles_in_SCC):
+    def __init__(self, matrix_unsigned, dict_i_node_array_contradicts, i_position_of_single_node_start):
+        Cycles_module.Find_cycles_in_SCC.__init__(self, matrix_unsigned)
+        self.dict_i_node_array_contradicts = dict_i_node_array_contradicts
+        self.i_position_of_single_node_start = i_position_of_single_node_start
+        self.l_l_i_cycles_containing_composite = []
+        self.l_l_i_cycles_only_single = []
+        
+    def _make_dict_of_opposing_state_containing_nodes(self, i_0_of_new_matrix):
+        dict_i_node_set_contradicts_modified = {}
+        for i_new, i_index in enumerate(range(i_0_of_new_matrix, len(self.matrix_unsigned))):
+            array_indexes = self.dict_i_node_array_contradicts[i_index] - i_0_of_new_matrix
+            dict_i_node_set_contradicts_modified[i_new] = set(array_indexes[array_indexes>=0])
+        return dict_i_node_set_contradicts_modified
+    
+    def _find_cycles_on_node_over_i(self, i_0_of_new_matrix):
+        matrix_over_node_i = np.matrix(self.matrix_unsigned[i_0_of_new_matrix:,i_0_of_new_matrix:])
+        dict_i_node_set_contradicts_modified = self._make_dict_of_opposing_state_containing_nodes(i_0_of_new_matrix)
+        object_cycle_finder = Find_cycles_containing_0_for_stable_motifs(matrix_over_node_i, dict_i_node_set_contradicts_modified)
+        l_l_i_cycles = object_cycle_finder.find_cycles()
+
+        return self._modify_cycles(l_l_i_cycles, i_0_of_new_matrix)
+    
+    def find_cycles_containing_composite_nodes(self):
+        for i in range(self.i_position_of_single_node_start):
+            self.l_l_i_cycles_containing_composite.extend(self._find_cycles_on_node_over_i(i))
+        
+        return self.l_l_i_cycles_containing_composite
+    
+    def find_cycles_only_single_nodes(self):
+        for i in range(self.i_position_of_single_node_start, self.i_num_of_nodes):
+            self.l_l_i_cycles_only_single.extend(self._find_cycles_on_node_over_i(i))
+        
+        return self.l_l_i_cycles_only_single
+
+class Find_cycles_containing_0_for_stable_motifs(Cycles_module.Find_cycles_containing_0):
+    def __init__(self, matrix_unsigned, dict_i_node_set_contradicts):
+        Cycles_module.Find_cycles_containing_0.__init__(self, matrix_unsigned)
+        self.dict_i_node_set_contradicts = dict_i_node_set_contradicts
+        self.set_flow = set([])
+    
+    def _extend_flow(self, i_node):
+        Cycles_module.Find_cycles_containing_0._extend_flow(self, i_node)
+        self.set_flow.add(i_node)
+        
+    def _passable_case(self, i_next_edge):
+        i_node_next = self.dic_i_start_array_ends[self.l_flow[-1]][i_next_edge]
+        self.dic_i_start_i_count[self.l_flow[-1]] -= 1
+        if i_node_next == 0:#it is a cycle containing 0
+            self.l_connectable_to_0[-1] = True#l_flow[-1] node is connected to 0 node
+            self.l_l_i_cycles.append(self.l_flow.copy())
+        elif self.set_flow.intersection(self.dict_i_node_set_contradicts[i_node_next]):
+            pass
+        elif not self.array_blocked[i_node_next]:# not passed this node yet
+            self._extend_flow(i_node_next)
+            
+    def _impassble_case(self):
+        self.set_flow.discard(self.l_flow[-1])
+        Cycles_module.Find_cycles_containing_0._impassble_case(self)
+        

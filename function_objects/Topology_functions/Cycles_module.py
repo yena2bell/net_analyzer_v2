@@ -11,7 +11,8 @@ from . import SCC_module
 
 def find_cycles_unsigned_graph(unsigned_graph):
     object_cycles_finder = Find_cycles(unsigned_graph.show_unsigned_graph_matrix_form())
-    l_l_i_cycles = object_cycles_finder.find_cycles()
+    object_cycles_finder.find_cycles()
+    l_l_i_cycles = object_cycles_finder.show_all_cycles()
     
     l_l_s_cycles = []
     l_s_nodenames = unsigned_graph.show_nodenames()
@@ -22,6 +23,7 @@ def find_cycles_unsigned_graph(unsigned_graph):
     return l_l_s_cycles
 
 class Find_cycles:
+    #Johnson's algorithm
     def __init__(self, matrix_unsigned):
         self.matrix_unsigned = np.matrix(matrix_unsigned)
         self.i_num_of_nodes = len(self.matrix_unsigned)
@@ -31,24 +33,28 @@ class Find_cycles:
     
     def _decompose_SCC(self):
         self.l_l_SCCs = SCC_module.decompose_to_SCC(self.matrix_unsigned)
+    
+    def _modify_cycles(self, l_l_i_cycles, l_SCC):
+        l_l_i_cycles_modified = []
+        for l_i_cycle in l_l_i_cycles:
+            l_i_cycle_modified = [l_SCC[i] for i in l_i_cycle]
+            l_l_i_cycles_modified.append(l_i_cycle_modified)
+
+        return l_l_i_cycles_modified
         
     def _find_cycles_in_SCC(self, l_SCC):
         matrix_unsigned_of_SCC = np.matrix(self.matrix_unsigned[np.ix_(l_SCC,l_SCC)])
         object_cycles_finder = Find_cycles_in_SCC(matrix_unsigned_of_SCC)
         l_l_i_cycles = object_cycles_finder.find_cycles()
         
-        l_l_i_cycles_modified = []
-        for l_i_cycle in l_l_i_cycles:
-            l_i_cycle_modified = [l_SCC[i] for i in l_i_cycle]
-            l_l_i_cycles_modified.append(l_i_cycle_modified)
-        
-        return l_l_i_cycles_modified
+        return self._modify_cycles(l_l_i_cycles, l_SCC)
     
     def find_cycles(self):
         for l_SCC in self.l_l_SCCs:
             l_l_i_cycles = self._find_cycles_in_SCC(l_SCC)
             self.l_l_i_cycles.extend(l_l_i_cycles)
-        
+    
+    def show_all_cycles(self):
         return self.l_l_i_cycles
         
 
@@ -58,16 +64,20 @@ class Find_cycles_in_SCC:
         self.i_num_of_nodes = len(self.matrix_unsigned)
         self.l_l_i_cycles = []
         
-    def _find_cycles_on_node_over_i(self, i_0_of_new_matrix):
-        matrix_over_node_i = np.matrix(self.matrix_unsigned[i_0_of_new_matrix:,i_0_of_new_matrix:])
-        object_cycle_finder = Find_cycles_containing_0(matrix_over_node_i)
-        l_l_i_cycles = object_cycle_finder.find_cycles()
+    def _modify_cycles(self, l_l_i_cycles, i_0_of_new_matrix):
         l_l_i_cycles_modified = []
         for l_i_cycle in l_l_i_cycles:
             l_i_cycle_modified = [i+i_0_of_new_matrix for i in l_i_cycle]
             l_l_i_cycles_modified.append(l_i_cycle_modified)
 
         return l_l_i_cycles_modified
+        
+    def _find_cycles_on_node_over_i(self, i_0_of_new_matrix):
+        matrix_over_node_i = np.matrix(self.matrix_unsigned[i_0_of_new_matrix:,i_0_of_new_matrix:])
+        object_cycle_finder = Find_cycles_containing_0(matrix_over_node_i)
+        l_l_i_cycles = object_cycle_finder.find_cycles()
+
+        return self._modify_cycles(l_l_i_cycles, i_0_of_new_matrix)
     
     def find_cycles(self):
         for i in range(self.i_num_of_nodes):

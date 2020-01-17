@@ -49,8 +49,11 @@ class Unsigned_graph(Topology):
         return [self.show_nodenames()[j] for j in l_index_sources]
     
     def show_regulators_of_node(self, s_node):
-        array_row = self.show_unsigned_graph_matrix_form()[self.index_of_node(s_node),:]
-        return [self.show_nodenames()[i] for i in np.nonzero(array_row)[0]]
+        return [self.show_nodenames()[i] for i in self.show_indexes_of_regulators_of_node(self.index_of_node(s_node))]
+    
+    def show_indexes_of_regulators_of_node(self, i_node):
+        matrix_row = self.show_unsigned_graph_matrix_form()[i_node,:]
+        return np.nonzero(matrix_row)[1]
 
 
 class Expanded_network(Unsigned_graph):
@@ -62,6 +65,7 @@ class Expanded_network(Unsigned_graph):
 
         self.l_s_nodenames_single = []#'on' nodes are on odd indexes, "off" nodes are on even indexes
         self.l_s_nodenames_composite = []
+        #self.l_s_nodenames = self.l_s_nodenames_single + self.l_s_nodenames_composite
     
     def set_single_nodenames(self, l_single_nodes):
         self.l_s_nodenames_single = l_single_nodes
@@ -83,3 +87,28 @@ class Expanded_network(Unsigned_graph):
     
     def show_connector(self):
         return self.s_andnode_connector
+    
+    def check_index_of_single_node(self, i_index):
+        if (0 <= i_index) and (i_index < len(self.l_s_nodenames_single)):
+            return True
+        else:
+            return False
+    
+    def show_index_of_inverse_state_of_node(self, i_index):
+        if self.check_index_of_single_node(i_index):
+            #i_index%2 == 0 means i_index is even index so "off". to get index of "on" state node, add 1.
+            #1 means "on". to get index of "off" state, add -1
+            return i_index - 2*(i_index%2) + 1
+        elif (i_index < len(self.l_s_nodenames)) and (len(self.l_s_nodenames_single) <= i_index):
+            print(i_index," is composite node")
+        else:
+            raise ValueError(str(i_index)+" is out of range")
+            
+    def show_indexes_of_composite_node_containing_single_node(self, i_index):
+        if self.check_index_of_single_node(i_index):
+            array_index_composites = np.nonzero(self.show_unsigned_graph_matrix_form()[len(self.l_s_nodenames_single):,i_index])[0]
+            return array_index_composites + len(self.l_s_nodenames_single)
+        elif (i_index < len(self.l_s_nodenames)) and (len(self.l_s_nodenames_single) <= i_index):
+            print(i_index," is composite node")
+        else:
+            raise ValueError(str(i_index)+" is out of range")

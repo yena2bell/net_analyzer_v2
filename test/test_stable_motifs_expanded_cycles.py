@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Jan  7 10:17:16 2020
+Created on Fri Jan 17 18:00:17 2020
 
 @author: jwKim
 """
@@ -25,20 +25,12 @@ factory.extract_data_from_logics()
 
 unsigned_graph = factory.make_unsigned_graph()
 Boolean_dynamics = factory.make_Boolean_dynamics()
-
-l_SCCs = na2.SCC_module.decompose_to_SCC_unsigned_graph(unsigned_graph)
-
 factory_expanded = na2.Expanded_network_factory(unsigned_graph, Boolean_dynamics)
 factory_expanded.make_all_nodes()#bottleneck
 expanded_net = factory_expanded.make_expanded_network()
 
 print(expanded_net.l_s_nodenames)
-print(expanded_net.show_unsigned_graph_matrix_form())
 
-#s_address_results = r"D:\my python\my library\net_analyzer_v2\test\test_compare_3_proc_re.txt"
-s_address_results = r"D:\my python\my library\net_analyzer_v2\test\test_8_nodes_model.txt"
+s_address_results = r"D:\my python\my library\net_analyzer_v2\test\expanded_cycle.txt"
 
-#l_dict_stable_motifs = na2.Stable_motif_module.find_stable_motifs(unsigned_graph, expanded_net, 1, 5, [], s_address_results)
-
-if __name__ == "__main__":
-    l_dict_stable_motifs = na2.Stable_motif_module.find_stable_motifs(unsigned_graph, expanded_net, 1, None, [], s_address_results, 1)
+l1, l2 = na2.Stable_motif_module.find_stable_motifs_using_expanded_net_cycles(expanded_net)
