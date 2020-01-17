@@ -312,7 +312,11 @@ class Find_cycles_in_expaned_net_for_stable_motifs(Cycles_module.Find_cycles):
             self.dict_i_node_array_contradicted_nodes[i] = np.concatenate(([i_index_opposite_state], self.expanded_network.show_indexes_of_composite_node_containing_single_node(i_index_opposite_state)))
         for i in range(len(self.expanded_network.show_composite_nodenames())):
             i_index = i+ len(self.expanded_network.show_single_nodenames())
-            self.dict_i_node_array_contradicted_nodes[i_index] = np.array([self.expanded_network.show_index_of_inverse_state_of_node(i_simple_node) for i_simple_node in self.expanded_network.show_indexes_of_regulators_of_node(i_index)])
+            l_simple_constradicts = [self.expanded_network.show_index_of_inverse_state_of_node(i_simple_node) for i_simple_node in self.expanded_network.show_indexes_of_regulators_of_node(i_index)]
+            l_composite_constraints = []
+            for i_simple_contradict in l_simple_constradicts:
+                l_composite_constraints.extend(self.expanded_network.show_indexes_of_composite_node_containing_single_node(i_simple_contradict))
+            self.dict_i_node_array_contradicted_nodes[i_index] = np.array(l_simple_constradicts+l_composite_constraints)
     
     def _find_conditions_to_SCC(self, l_SCC):
         dict_i_node_array_contradictend_nodes_in_SCC = {}
