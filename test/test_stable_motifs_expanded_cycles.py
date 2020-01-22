@@ -31,6 +31,8 @@ expanded_net = factory_expanded.make_expanded_network()
 
 print(expanded_net.l_s_nodenames)
 
-s_address_results = r"D:\my python\my library\net_analyzer_v2\test\expanded_cycle.txt"
+s_address_results = r"D:\my python\my library\net_analyzer_v2\test\test_200118_2.txt"
 
-l1, l2 = na2.Stable_motif_module.find_stable_motifs_using_expanded_net_cycles(expanded_net)
+#l1, l2 = na2.Stable_motif_module.find_stable_motifs_using_expanded_net_cycles(expanded_net)
+na2.Stable_motif_module.test_stable_motif_functions(expanded_net, s_address_results)
+na2.Stable_motif_module.test2_stable_motif_functions(expanded_net)

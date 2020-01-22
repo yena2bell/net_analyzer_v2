@@ -1,3 +1,5 @@
+import pickle
+import os
 import numpy as np
 
 class Topology:
@@ -24,7 +26,12 @@ class Topology:
         self.l_s_nodenames.append(s_nodename)
     
     def index_of_node(self, s_nodename):
-        return self.l_s_nodenames.index(s_nodename)    
+        return self.l_s_nodenames.index(s_nodename)
+    
+    def save_using_pickle(self, s_address_of_folder_to_save):
+        s_name_save = "pickle_save_"+str(self)+".bin"
+        with open(os.path.join(s_address_of_folder_to_save,s_name_save), 'wb') as file_pickle:
+            pickle.dump(self, file_pickle)
 
 
 class Unsigned_graph(Topology):
@@ -94,11 +101,33 @@ class Expanded_network(Unsigned_graph):
         else:
             return False
     
+    def check_single_node_index_is_on_state(self, i_index):
+        if self.check_index_of_single_node(i_index):
+            if i_index%2:# i_index is odd
+                return True
+            else:
+                return False
+        else:
+            raise ValueError(str(i_index)+"("+self.show_single_nodenames()[i_index]+") is not single node")
+        
+    def show_original_nodename_from_index(self, i_index):
+        if self.check_index_of_single_node(i_index):
+            if self.check_single_node_index_is_on_state(i_index):
+                return self.show_nodenames()[i_index][:-len(self.s_suffix_of_on_node)]
+            else:
+                return self.show_nodenames()[i_index][:-len(self.s_suffix_of_off_node)]
+        else:
+            raise ValueError(str(i_index)+"("+self.show_single_nodenames()[i_index]+") is not single node")
+    
     def show_index_of_inverse_state_of_node(self, i_index):
         if self.check_index_of_single_node(i_index):
             #i_index%2 == 0 means i_index is even index so "off". to get index of "on" state node, add 1.
             #1 means "on". to get index of "off" state, add -1
-            return i_index - 2*(i_index%2) + 1
+            if self.check_single_node_index_is_on_state(i_index):
+                return i_index - 1
+            else:
+                return i_index + 1
+            #return i_index - 2*(i_index%2) + 1
         elif (i_index < len(self.l_s_nodenames)) and (len(self.l_s_nodenames_single) <= i_index):
             print(i_index," is composite node")
         else:

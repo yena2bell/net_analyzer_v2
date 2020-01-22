@@ -41,10 +41,15 @@ class Find_cycles:
             l_l_i_cycles_modified.append(l_i_cycle_modified)
 
         return l_l_i_cycles_modified
-        
-    def _find_cycles_in_SCC(self, l_SCC):
+    
+    def _make_cycles_finder_object_of_SCC(self, l_SCC):
         matrix_unsigned_of_SCC = np.matrix(self.matrix_unsigned[np.ix_(l_SCC,l_SCC)])
         object_cycles_finder = Find_cycles_in_SCC(matrix_unsigned_of_SCC)
+        
+        return object_cycles_finder
+        
+    def _find_cycles_in_SCC(self, l_SCC):
+        object_cycles_finder = self._make_cycles_finder_object_of_SCC(l_SCC)
         l_l_i_cycles = object_cycles_finder.find_cycles()
         
         return self._modify_cycles(l_l_i_cycles, l_SCC)
